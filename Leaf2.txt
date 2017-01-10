@@ -1,0 +1,263 @@
+## Last commit: 2016-12-30 12:36:36 UTC by greg
+version 15.1X53-D60.4;
+system {
+    host-name Leaf2;
+    root-authentication {
+        encrypted-password "$1$UFBIRv8B$n/xkqwioLuk197bpOA2Y11"; ## SECRET-DATA
+        ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key"; ## SECRET-DATA
+    }
+    login {
+        user greg {
+            uid 2001;
+            class super-user;
+            authentication {
+                encrypted-password "$1$DX0pgCza$pOuFnpsp4MPo1Qa6Ev9Dy."; ## SECRET-DATA
+            }
+        }
+        user vagrant {
+            uid 2000;
+            class super-user;
+            authentication {
+                ssh-rsa "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key"; ## SECRET-DATA
+            }
+        }
+    }
+    services {
+        ssh {
+            root-login allow;
+        }
+        netconf {
+            ssh;
+        }
+        rest {
+            http {
+                port 8080;
+            }
+            enable-explorer;
+        }
+    }
+    syslog {
+        user * {
+            any emergency;
+        }
+        file messages {
+            any notice;
+            authorization info;
+        }
+        file interactive-commands {
+            interactive-commands any;
+        }
+    }
+    extensions {
+        providers {
+            juniper {
+                license-type juniper deployment-scope commercial;
+            }
+            chef {
+                license-type juniper deployment-scope commercial;
+            }
+        }
+    }
+}
+interfaces {
+    xe-0/0/0 {
+        description "xe-0/0/0: Link to Server2 ens4";
+        unit 0 {
+            family ethernet-switching {
+                vlan {
+                    members v100;
+                }
+            }
+        }
+    }
+    xe-0/0/1 {
+        description "xe-0/0/1: Link to Spine1 xe-0/0/0";
+        unit 0 {
+            family inet {
+                address 10.11.102.2/30;
+            }
+            family mpls;
+        }
+    }
+    xe-0/0/2 {
+        description "xe-0/0/2: Link to Spine2 xe-0/0/1";
+        unit 0 {
+            family inet {
+                address 10.12.102.2/30;
+            }
+            family mpls;
+        }
+    }
+    em0 {
+        unit 0 {
+            family inet {
+                address 192.168.122.102/24;
+            }
+        }
+    }
+    em1 {
+        unit 0 {
+            family inet {
+                address 169.254.0.2/24;
+            }
+        }
+    }
+    lo0 {
+        unit 0 {
+            family inet {
+                address 192.168.254.102/32;
+            }
+        }
+        unit 50 {
+            family inet {
+                address 192.168.50.102/32;
+            }
+        }
+    }
+}
+forwarding-options {
+    storm-control-profiles default {
+        all;
+    }
+}
+routing-options {
+    static {
+        route 192.168.0.0/16 next-hop 192.168.122.1;
+    }
+    router-id 192.168.254.102;
+    autonomous-system 64700;
+    forwarding-table {
+        export PFE-LB;
+    }
+}
+protocols {
+    mpls {
+        interface xe-0/0/2.0;
+        interface xe-0/0/1.0;
+    }
+    bgp {
+        group UNDERLAY {
+            type external;
+            family inet {
+                labeled-unicast {
+                    resolve-vpn;
+                }
+            }
+            export UNDERLAY-EXPORT;
+            local-as 64902;
+            multipath multiple-as;
+            neighbor 10.11.102.1 {
+                peer-as 64801;
+            }
+            neighbor 10.12.102.1 {
+                peer-as 64802;
+            }
+        }
+        group OVERLAY {
+            type internal;
+            local-address 192.168.254.102;
+            import OVERLAY-LEAF-VPN-IMPORT;
+            family inet-vpn {
+                unicast;
+            }
+            family evpn {
+                signaling;
+            }
+            neighbor 192.168.255.11;
+            neighbor 192.168.255.12;
+        }
+    }
+    evpn {
+        encapsulation vxlan;
+        extended-vni-list 10100;
+        multicast-mode ingress-replication;
+        vni-options {
+            vni 10100 {
+                vrf-target export target:64700:10100;
+            }
+        }
+    }
+    igmp-snooping {
+        vlan default;
+    }
+}
+policy-options {
+    policy-statement EVPN-LEAF-IMPORT {
+        term IMPORT-LEAF-ESI {
+            from community LEAF-ESI;
+            then accept;
+        }
+        term IMPORT-VNI10100 {
+            from community VNI10100;
+            then accept;
+        }
+        term DEFAULT {
+            then reject;
+        }
+    }
+    policy-statement OVERLAY-LEAF-VPN-IMPORT {
+        term NO-EVPN-TYPE-1-2-REMOTE {
+            from {
+                family evpn;
+                next-hop [ 192.168.255.101 192.168.255.102 ];
+                nlri-route-type [ 1 2 ];
+            }
+            then reject;
+        }
+        term DEFAULT {
+            then accept;
+        }
+    }
+    policy-statement PFE-LB {
+        term DEFAULT {
+            then {
+                load-balance per-packet;
+            }
+        }
+    }
+    policy-statement UNDERLAY-EXPORT {
+        term INFRA-LINKS {
+            from {
+                protocol direct;
+                route-filter 192.168.254.0/23 orlonger;
+                route-filter 10.0.0.0/8 orlonger;
+            }
+            then accept;
+        }
+        term BGP {
+            from protocol bgp;
+            then accept;
+        }
+        term DEFAULT {
+            then reject;
+        }
+    }
+    community LEAF-ESI members target:64700:9999;
+    community VNI10100 members target:64700:10100;
+}
+routing-instances {
+    VRF-1 {
+        instance-type vrf;
+        interface lo0.50;
+        route-distinguisher 192.168.254.102:50;
+        vrf-target target:64700:50;
+    }
+}
+switch-options {
+    vtep-source-interface lo0.0;
+    route-distinguisher 192.168.254.102:1;
+    vrf-import EVPN-LEAF-IMPORT;
+    vrf-target target:64700:9999;
+}
+vlans {
+    default {
+        vlan-id 1;
+    }
+    v100 {
+        vlan-id 100;
+        vxlan {
+            vni 10100;
+            ingress-node-replication;
+        }
+    }
+}

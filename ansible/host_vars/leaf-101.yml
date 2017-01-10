@@ -1,0 +1,23 @@
+---
+platform: qfx5100
+
+hostname: leaf-101
+
+node_id: 101
+
+interfaces:
+    - number: 0
+      mode: access
+      vlans:
+          - v100
+
+    - number: 1
+      mode: access
+      vlans:
+          - v101
+
+    - number: 2
+      mode: trunk
+      vlans:
+          - v100
+          - v101
