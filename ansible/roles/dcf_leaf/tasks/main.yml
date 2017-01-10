@@ -1,0 +1,5 @@
+---
+- name: Building the leaf configuration
+  template:
+    src=dcf_leaf.j2
+    dest={{ build_dir }}/01_dcf_leaf.conf

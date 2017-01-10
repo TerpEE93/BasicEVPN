@@ -1,0 +1,4 @@
+---
+pkg_dir: packages
+log_dir: logs
+build_dir: build

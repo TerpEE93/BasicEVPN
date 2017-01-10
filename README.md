@@ -20,6 +20,8 @@ the purposes of readability and for ease of deployment:
         c. Underlay host networks (Leaf-to-Host)
            Addressed from 10.<node-id>.<node-id>.0/24
            Leaf switch gets .1
+        d. Management interfaces
+           Addressed from 192.168.122.<node-id>/24
 
     3.  VPN Identifiers
         a. Reserved for possible admin use: 0-9
