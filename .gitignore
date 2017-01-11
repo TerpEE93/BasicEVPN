@@ -1,5 +1,6 @@
 # Adding .gitignore to filter out log files and build output.
 # You don't really need them...
 
+.gitignore
 logs/**
 build/**
