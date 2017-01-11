@@ -1,0 +1,56 @@
+---
+root_pw_encrypted:
+    "$1$q5omhfKL$hZReT1C2OXkuVc7MyeM7C/"
+
+admin_user:
+    name: admin
+    pw_encrypted: "$1$q5omhfKL$hZReT1C2OXkuVc7MyeM7C/"
+
+mgt:
+    prefix: 192.168.122
+    default_route: 192.168.0.0/16
+    default_nh: 192.168.122.1
+
+leaf_lo_prefix: 192.168.254
+
+spine_lo_prefix: 192.168.255
+
+spines:
+    - name: spine1
+      node_id: 11
+
+    - name: spine2
+      node_id: 12
+
+site_asn: 64700
+
+vlans:
+    - name: v100
+      vid: 100
+      vni: 10100
+      prefix: 172.31.100
+      mask: 24
+
+    - name: v101
+      vid: 101
+      vni: 10101
+      prefix: 172.31.101
+      mask: 24
+
+    - name: v200
+      vid: 200
+      vni: 10200
+      prefix: 172.31.200
+      mask: 24
+
+tenants:
+    - name: Customer_A
+      vid_list:
+          - 100
+          - 101
+      vrf_id: 100
+
+    - name: Customer_B
+      vid_list:
+          - 200
+      vrf_id: 200

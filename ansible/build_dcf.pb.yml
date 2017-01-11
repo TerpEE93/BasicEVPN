@@ -28,19 +28,19 @@
 # Role based config template building
 # =========================================================
 
-- name: Build the leaf switch configurations
+- name: Call role to build the leaf switch configurations
   hosts: leaf
   connection: local
   gather_facts: no
   roles:
     - dcf_leaf
 
-#- name: Build the spine switch configurations
-#  hosts: spine
-#  connection: local
-#  gather_facts: no
-#  roles:
-#    - dcf_spine
+- name: Call role to build the spine switch configurations
+  hosts: spine
+  connection: local
+  gather_facts: no
+  roles:
+    - dcf_spine
 
 # =========================================================
 # Finish by assembling config snippets into single file

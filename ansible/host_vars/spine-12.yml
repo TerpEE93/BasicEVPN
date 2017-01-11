@@ -1,0 +1,17 @@
+---
+platform: vQFX
+
+hostname: spine-12
+
+node_id: 12
+
+leaf_interfaces:
+    - name: xe-0/0/0
+      peer_node_id: 101
+
+    - name: xe-0/0/1
+      peer_node_id: 102
+
+edge_interfaces:
+    - name: xe-0/0/2
+      peer_node_id: 1
