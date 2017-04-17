@@ -6,25 +6,19 @@ hostname: leaf-102
 node_id: 102
 
 host_interfaces:
-    - name: xe-0/0/0
+    - name: xe-0/0/2
       mode: access
       vlans:
           - v100
 
-    - name: xe-0/0/5
+    - name: xe-0/0/3
       mode: access
       vlans:
-          - v101
-
-    - name: xe-0/0/6
-      mode: trunk
-      vlans:
-          - v100
           - v101
 
 spine_interfaces:
-    - name: xe-0/0/1
+    - name: xe-0/0/0
       peer_node_id: 11
 
-    - name: xe-0/0/2
+    - name: xe-0/0/1
       peer_node_id: 12

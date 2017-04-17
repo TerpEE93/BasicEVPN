@@ -64,7 +64,7 @@ interfaces {
         description "{{ interface.name }}: Link to Edge {{ interface.peer_node_id }}";
         unit 0 {
             family inet {
-                address 10.{{ interface.peer_node_id }}.{{ node_id }}.1/30;
+                address 10.{{ interface.peer_node_id }}.{{ node_id }}.2/30;
             }
             family mpls;
         }
@@ -91,7 +91,7 @@ interfaces {
         unit {{ vlan.vid }} {
             description "irb.{{ vlan.vid }}: Default GW in {{ vlan.name }}";
             family inet {
-                address {{ vlan.prefix }}.11/{{ vlan.mask }} {
+                address {{ vlan.prefix }}.{{ node_id }}/{{ vlan.mask }} {
                     virtual-gateway-address {{ vlan.prefix }}.1;
                 }
             }
@@ -165,7 +165,8 @@ protocols {
             family evpn {
                 signaling;
             }
-            export OVERLAY-SPINE-VPN-EXPORT;
+            export OVERLAY-SPINE-EXPORT;
+            vpn-apply-export;
             cluster 0.0.0.1;
             multipath;
             allow {{ leaf_lo_prefix }}.0/24;
@@ -179,11 +180,27 @@ protocols {
             family evpn {
                 signaling;
             }
+            export OVERLAY-SPINE-EXPORT;
+            vpn-apply-export;
             multipath;
 {% for spine in spines %}
 {% if spine.node_id|string() != node_id|string() %}
             neighbor {{ spine_lo_prefix }}.{{ spine.node_id }};
 {% endif %}
+{% endfor %}
+        }
+        group EDGE {
+            type external;
+            family inet {
+                labeled-unicast;
+            }
+            family inet-vpn {
+                unicast;
+            }
+            export EXPORT-TO-EDGE;
+            peer-as {{ enterprise_asn }};
+{% for edge in edge_rtrs %}
+            neighbor 10.{{ edge.node_id }}.{{ node_id }}.1;
 {% endfor %}
         }
     }
@@ -219,7 +236,31 @@ policy-options {
             then reject;
         }
     }
-    policy-statement OVERLAY-SPINE-VPN-EXPORT {
+    policy-statement EXPORT-TO-EDGE {
+        term INFRA-LINKS {
+            from {
+                protocol direct;
+{% for edge in edge_rtrs %}
+                route-filter 10.{{ edge.node_id }}.{{ node_id }}.2/30 orlonger;
+{% endfor %}
+            }
+            then accept;
+        }
+        term OVERLAY-ROUTES {
+            from {
+                protocol bgp;
+                community OVERLAY;
+            }
+            then {
+                community delete OVERLAY;
+                accept;
+            }
+        }
+        term DEFAULT {
+            then reject;
+        }
+    }
+    policy-statement OVERLAY-SPINE-EXPORT {
         term NO-EVPN-TYPE-5 {
             from {
                 family evpn;
@@ -227,8 +268,18 @@ policy-options {
             }
             then reject;
         }
+        term NO-UNDERLAY {
+            from {
+                protocol bgp;
+                community UNDERLAY;
+            }
+            then reject;
+        }
         term DEFAULT {
-            then accept;
+            then {
+                community add OVERLAY;
+                accept;
+            }
         }
     }
     policy-statement PFE-LB {
@@ -245,10 +296,16 @@ policy-options {
                 route-filter {{ spine_lo_prefix }}.0/24 orlonger;
                 route-filter 10.0.0.0/8 orlonger;
             }
-            then accept;
+            then {
+                community add UNDERLAY;
+                accept;
+            }
         }
         term BGP {
-            from protocol bgp;
+            from {
+                protocol bgp;
+                community UNDERLAY;
+            }
             then accept;
         }
         term DEFAULT {
@@ -263,11 +320,17 @@ policy-options {
             }
             then reject;
         }
-        term DEFAULT {
+        term ACCEPT-UNDERLAY {
+            from community UNDERLAY;
             then accept;
+        }
+        term DEFAULT {
+            then reject;
         }
     }
     community EVPN-ESI members target:{{ site_asn }}:9999;
+    community OVERLAY members {{ site_asn }}:7986;
+    community UNDERLAY members {{ site_asn }}:8578;
 {% for vlan in vlans %}
     community VNI{{ vlan.vni }} members target:{{ site_asn }}:{{ vlan.vni }};
 {% endfor %}
@@ -283,6 +346,7 @@ routing-instances {
         interface lo0.{{ tenant.vrf_id }};
         route-distinguisher {{ spine_lo_prefix}}.{{ node_id }}:{{ tenant.vrf_id }};
         vrf-target target:{{ site_asn }}:{{ tenant.vrf_id }};
+        vrf-table-label;
     }
 {% endfor %}
 }

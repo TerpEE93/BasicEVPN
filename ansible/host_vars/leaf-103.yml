@@ -1,9 +1,9 @@
 ---
 platform: vQFX
 
-hostname: leaf-101
+hostname: leaf-103
 
-node_id: 101
+node_id: 103
 
 host_interfaces:
     - name: xe-0/0/2

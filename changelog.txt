@@ -1,0 +1,28 @@
+##############
+# Change Log #
+##############
+
+### 17 March 2017
+- Fixed dcf_spine.j2 template
+  o Template incorrectly assigned .11 as the host part of the IRB IP address
+    for all Spines.  Needs to be node_id, so it's unique per Spine.
+
+  o Changed the host part of the IP address on the Spine link to the Edge
+    from a .1 to a .2.  This is more consistent with the "bigger end gets
+    the lower address" convention we used with the Spines and Leafs.
+
+- Rewrote several policies for importing and exporting routes inside the DC
+  o Also added OVERLAY and UNDERLAY communities to help with this
+
+- Added policy for exchanging routes with the DC edge router
+
+- Added BGP peering to DC edge router
+  o Applies policies in previous note
+
+- Added vrf-table-label to the vrf routing-instances configuration on
+  the Spine switches.  We need this before the Spines will advertise the
+  IRB networks to the edge routers.
+
+- Added an OVERLAY-LEAF-EXPORT policy and vpn-apply-export to the dc_leaf.j2
+  template so that we can advertise EVPN routes with the OVERLAY community
+  set at the source.

@@ -15,6 +15,12 @@ leaf_lo_prefix: 192.168.254
 
 spine_lo_prefix: 192.168.255
 
+enterprise_asn: 64001
+
+edge_rtrs:
+    - name: edge1
+      node_id: 1
+
 spines:
     - name: spine1
       node_id: 11

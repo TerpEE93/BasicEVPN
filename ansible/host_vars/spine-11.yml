@@ -9,9 +9,12 @@ leaf_interfaces:
     - name: xe-0/0/1
       peer_node_id: 101
 
-    - name: xe-0/0/0
+    - name: xe-0/0/2
       peer_node_id: 102
 
+    - name: xe-0/0/3
+      peer_node_id: 103
+
 edge_interfaces:
-    - name: xe-0/0/2
+    - name: xe-0/0/0
       peer_node_id: 1

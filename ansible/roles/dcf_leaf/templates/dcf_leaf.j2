@@ -137,13 +137,15 @@ protocols {
         group OVERLAY {
             type internal;
             local-address {{ leaf_lo_prefix }}.{{ node_id }};
-            import OVERLAY-LEAF-VPN-IMPORT;
+            import OVERLAY-LEAF-IMPORT;
             family inet-vpn {
                 unicast;
             }
             family evpn {
                 signaling;
             }
+            export OVERLAY-LEAF-EXPORT;
+            vpn-apply-export;
 {% for interface in spine_interfaces %}
             neighbor {{ spine_lo_prefix }}.{{ interface.peer_node_id }};
 {% endfor %}
@@ -181,12 +183,27 @@ policy-options {
             then reject;
         }
     }
-    policy-statement OVERLAY-LEAF-VPN-IMPORT {
+    policy-statement OVERLAY-LEAF-EXPORT {
+        term DEFAULT {
+            then {
+                community add OVERLAY;
+                accept;
+            }
+        }
+    }
+    policy-statement OVERLAY-LEAF-IMPORT {
         term NO-EVPN-TYPE-1-2-REMOTE {
             from {
                 family evpn;
                 next-hop [ 192.168.255.101 192.168.255.102 ];
                 nlri-route-type [ 1 2 ];
+            }
+            then reject;
+        }
+        term NO-UNDERLAY {
+            from {
+                protocol bgp;
+                community UNDERLAY;
             }
             then reject;
         }
@@ -208,10 +225,16 @@ policy-options {
                 route-filter {{ leaf_lo_prefix }}.0/24 orlonger;
                 route-filter 10.0.0.0/8 orlonger;
             }
-            then accept;
+            then {
+                community add UNDERLAY;
+                accept;
+            }
         }
         term BGP {
-            from protocol bgp;
+        from {
+            protocol bgp;
+            community UNDERLAY;
+        }
             then accept;
         }
         term DEFAULT {
@@ -219,6 +242,8 @@ policy-options {
         }
     }
     community EVPN-ESI members target:{{ site_asn }}:9999;
+    community OVERLAY members 64700:7986;
+    community UNDERLAY members 64700:8578;
 {% for vlan in vlans %}
     community VNI{{ vlan.vni }} members target:{{ site_asn }}:{{ vlan.vni }};
 {% endfor %}
