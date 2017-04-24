@@ -2,6 +2,18 @@
 # Change Log #
 ##############
 
+### 24 April 2017
+- Removing MPLS from the links between leaf and spine switches.  We still
+  need it for the spine-to-edge links!
+
+- Removing L3VPN NLRI from the Overlay peering between the Spine and Leaf
+  nodes.  No MPLS means No L3VPN to the leaf nodes.
+
+- Normalizing policy and group names with what I have in the design doc.
+
+- Adding BFD to the BGP underlay peering.  Should speed things up in case
+  of a soft failure on a link.
+
 ### 17 March 2017
 - Fixed dcf_spine.j2 template
   o Template incorrectly assigned .11 as the host part of the IRB IP address
