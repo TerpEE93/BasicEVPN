@@ -55,7 +55,6 @@ interfaces {
             family inet {
                 address 10.{{ node_id }}.{{ interface.peer_node_id }}.1/30;
             }
-            family mpls;
         }
     }
 {% endfor %}
@@ -131,9 +130,6 @@ routing-options {
 }
 protocols {
     mpls {
-{% for interface in leaf_interfaces %}
-        interface {{ interface.name }}.0;
-{% endfor %}
 {% for interface in edge_interfaces %}
         interface {{ interface.name }}.0;
 {% endfor %}
@@ -141,14 +137,18 @@ protocols {
     bgp {
         group UNDERLAY {
             type external;
-            import UNDERLAY-SPINE-IMPORT;
+            mtu-discovery
+            import UNDERLAY-IMPORT-SPINE;
             family inet {
-                labeled-unicast {
-                    resolve-vpn;
-                }
+                unicast;
             }
-            export UNDERLAY-EXPORT;
+            export UNDERLAY-EXPORT-SPINE;
             local-as 650{{ node_id }};
+            bfd-liveness-detection {
+                minimum-interval 1000;
+                multiplier 3;
+                session-mode single-hop;
+            }
             multipath multiple-as;
 {% for interface in leaf_interfaces %}
             neighbor 10.{{ node_id }}.{{ interface.peer_node_id }}.2 {
@@ -159,15 +159,17 @@ protocols {
         group OVERLAY {
             type internal;
             local-address {{ spine_lo_prefix }}.{{ node_id }};
-            family inet-vpn {
-                unicast;
-            }
             family evpn {
                 signaling;
             }
             export OVERLAY-SPINE-EXPORT;
             vpn-apply-export;
             cluster 0.0.0.1;
+            bfd-liveness-detection {
+                minimum-interval 1000;
+                multiplier 3;
+                session-mode single-hop;
+            }
             multipath;
             allow {{ leaf_lo_prefix }}.0/24;
         }
@@ -182,6 +184,11 @@ protocols {
             }
             export OVERLAY-SPINE-EXPORT;
             vpn-apply-export;
+            bfd-liveness-detection {
+                minimum-interval 1000;
+                multiplier 3;
+                session-mode single-hop;
+            }
             multipath;
 {% for spine in spines %}
 {% if spine.node_id|string() != node_id|string() %}
@@ -189,7 +196,7 @@ protocols {
 {% endif %}
 {% endfor %}
         }
-        group EDGE {
+        group DC-EDGE {
             type external;
             family inet {
                 labeled-unicast;
@@ -198,6 +205,11 @@ protocols {
                 unicast;
             }
             export EXPORT-TO-EDGE;
+            bfd-liveness-detection {
+                minimum-interval 1000;
+                multiplier 3;
+                session-mode single-hop;
+            }
             peer-as {{ enterprise_asn }};
 {% for edge in edge_rtrs %}
             neighbor 10.{{ edge.node_id }}.{{ node_id }}.1;
@@ -289,7 +301,7 @@ policy-options {
             }
         }
     }
-    policy-statement UNDERLAY-EXPORT {
+    policy-statement UNDERLAY-EXPORT-SPINE {
         term INFRA-LINKS {
             from {
                 protocol direct;
@@ -312,7 +324,7 @@ policy-options {
             then reject;
         }
     }
-    policy-statement UNDERLAY-SPINE-IMPORT {
+    policy-statement UNDERLAY-IMPORT-SPINE {
         term REJECT-GT-3-AS {
             from {
                 protocol bgp;

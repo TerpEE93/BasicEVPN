@@ -68,7 +68,6 @@ interfaces {
             family inet {
                 address 10.{{ interface.peer_node_id }}.{{ node_id }}.2/30;
             }
-            family mpls;
         }
     }
 {% endfor %}
@@ -121,12 +120,15 @@ protocols {
         group UNDERLAY {
             type external;
             family inet {
-                labeled-unicast {
-                    resolve-vpn;
-                }
+                unicast;
             }
             export UNDERLAY-EXPORT;
             local-as 65{{ node_id }};
+            bfd-liveness-detection {
+                minimum-interval 1000;
+                multiplier 3;
+                session-mode single-hop;
+            }
             multipath multiple-as;
 {% for interface in spine_interfaces %}
             neighbor 10.{{ interface.peer_node_id }}.{{ node_id }}.1 {
@@ -138,14 +140,16 @@ protocols {
             type internal;
             local-address {{ leaf_lo_prefix }}.{{ node_id }};
             import OVERLAY-LEAF-IMPORT;
-            family inet-vpn {
-                unicast;
-            }
             family evpn {
                 signaling;
             }
             export OVERLAY-LEAF-EXPORT;
             vpn-apply-export;
+            bfd-liveness-detection {
+                minimum-interval 1000;
+                multiplier 3;
+                session-mode single-hop;
+            }
 {% for interface in spine_interfaces %}
             neighbor {{ spine_lo_prefix }}.{{ interface.peer_node_id }};
 {% endfor %}
@@ -192,14 +196,6 @@ policy-options {
         }
     }
     policy-statement OVERLAY-LEAF-IMPORT {
-        term NO-EVPN-TYPE-1-2-REMOTE {
-            from {
-                family evpn;
-                next-hop [ 192.168.255.101 192.168.255.102 ];
-                nlri-route-type [ 1 2 ];
-            }
-            then reject;
-        }
         term NO-UNDERLAY {
             from {
                 protocol bgp;
